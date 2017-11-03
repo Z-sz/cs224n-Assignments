@@ -22,10 +22,8 @@ class Config(object):
     dropout = 0.5
     embed_size = 50
     hidden_size = 200
-    # hidden_size = 300
-    # batch_size = 2048
-    batch_size = 4096
-    n_epochs = 20
+    batch_size = 2048
+    n_epochs = 10
     lr = 0.001
 
 
@@ -113,7 +111,8 @@ class ParserModel(Model):
             embeddings: tf.Tensor of shape (None, n_features*embed_size)
         """
         ### YOUR CODE HERE
-        embeddings = tf.nn.embedding_lookup(params=self.pretrained_embeddings, ids=tf.cast(self.input_placeholder, dtype=tf.int32))
+        emb = tf.Variable(self.pretrained_embeddings) #Make the embeddings trainable!
+        embeddings = tf.nn.embedding_lookup(params=emb, ids=tf.cast(self.input_placeholder, dtype=tf.int32))
         embeddings = tf.reshape(embeddings, shape=(-1, self.config.n_features * self.config.embed_size))
         ### END YOUR CODE
         return embeddings
@@ -136,7 +135,7 @@ class ParserModel(Model):
                     b1: (hidden_size,)
                     U:  (hidden_size, n_classes)
                     b2: (n_classes)
-        Hint: Note that tf.nn.dropout takes the keep probability (1 - p_drop) as an argument. 
+        Hint: Note that tf.nn.dropout takes the keep probability (1 - p_drop) as an argument.
             The keep probability should be set to the value of self.dropout_placeholder
 
         Returns:
@@ -145,23 +144,14 @@ class ParserModel(Model):
 
         x = self.add_embedding()
         ### YOUR CODE HERE
-        # W = tf.get_variable(name="W", initializer=xavier_weight_init(),
-        #                     shape=(self.config.n_features * self.config.embed_size, self.config.hidden_size))
         W1 = tf.get_variable(name='W1', initializer=xavier_weight_init(),
                              shape=(self.config.n_features * self.config.embed_size, self.config.hidden_size))
-        W2 = tf.get_variable(name='W2', initializer=xavier_weight_init(),
-                             shape=(self.config.hidden_size, self.config.hidden_size))
         U = tf.get_variable(name='U', initializer=xavier_weight_init(), shape=(self.config.hidden_size, self.config.n_classes))
         b1 = tf.Variable(tf.zeros(shape=(self.config.hidden_size)), dtype=tf.float32)
         b2 = tf.Variable(tf.zeros(shape=(self.config.n_classes)), dtype=tf.float32)
-        b3 = tf.Variable(tf.zeros(shape=(self.config.hidden_size)), dtype=tf.float32)
         h1 = tf.nn.relu(tf.matmul(x, W1) + b1)
-        h1_norm = tf.layers.batch_normalization(inputs=h1, axis=1)
-        # h1_drop = tf.nn.dropout(h1_norm, keep_prob=self.dropout_placeholder)
-        h2 = tf.nn.relu(tf.matmul(h1_norm, W2) + b3)
-        h2_norm = tf.layers.batch_normalization(inputs=h2, axis=1)
-        h2_drop = tf.nn.dropout(h2_norm, keep_prob=self.dropout_placeholder)
-        pred = tf.matmul(h2_drop, U) + b2
+        h1_drop = tf.nn.dropout(h1, keep_prob=self.dropout_placeholder)
+        pred = tf.matmul(h1_drop, U) + b2
         ### END YOUR CODE
         return pred
 
@@ -203,11 +193,7 @@ class ParserModel(Model):
             train_op: The Op for training.
         """
         ### YOUR CODE HERE
-        starter_lr = self.config.lr
-        global_step = tf.Variable(0, dtype=tf.int32)
-        learning_rate = tf.train.exponential_decay(learning_rate=starter_lr, global_step=global_step,
-                                                   decay_steps=924, decay_rate=0.5)
-        # learning_rate = self.config.lr
+        learning_rate = self.config.lr
         train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
         ### END YOUR CODE
         return train_op
@@ -294,5 +280,6 @@ def main(debug=True):
 
 if __name__ == '__main__':
     main(debug=False)
+
 
 
