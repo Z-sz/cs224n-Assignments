@@ -1,0 +1,8 @@
+1. In utils.py StringIO is gone in python3. 
+   Replace line 14 with 'from io import StringIO'
+
+By the way, in this assignment I have a problem about the input that is
+what dose 'n_word_features' variable in both rnn and window model represent?
+Since L is a V by D matrix and V is the vocabulary size, dose it means that
+each word in a sentence is represented by 'n_word_features' words, if so
+how dose these representation generated?
